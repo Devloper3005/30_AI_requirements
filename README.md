@@ -38,9 +38,17 @@ Generation 3: Global  usage
 		○ Target format: 
 			§ Standardized database 
 			
-	- Choice of model 
-	- Training and validation of model 
+Choice of model :
 
+| Modeltype | Key feature | Pro|
+|----------|-------------|---------|
+BERT | Pre-trained transformer | Easy to use
+RoBERTa |	Like BERT |better training	Higher accuracy
+DistilBERT|Smaller, faster BERT |	Speed, lower resource usage|
+ALBERT|	Lite BERT, efficient|	Less memory, similar accuracy|
+XLNet	|Permutation-based, long deps|	Handles longer context|
+Electra|	Replaced token detection	|Efficient, strong performance|
+DeBERTa	|Enhanced attention	|Top accuracy on benchmarks|
 
 # Next steps
 ## Next steps Organization: 
