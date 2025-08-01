@@ -71,7 +71,16 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e8g9pAyIv5WsLFoU4A_s-23" value="We currently train complete model&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;We should only focus on training 3 to 4 layers of the model&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Check the model and number of layers&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="660" y="440" width="330" height="120" as="geometry" />
+          <mxGeometry x="610" y="340" width="330" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e8g9pAyIv5WsLFoU4A_s-24" value="Data augumentation without changing the label" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="150" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e8g9pAyIv5WsLFoU4A_s-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.07;entryY=1.033;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="e8g9pAyIv5WsLFoU4A_s-5" target="e8g9pAyIv5WsLFoU4A_s-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8g9pAyIv5WsLFoU4A_s-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.833;entryY=-0.033;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="e8g9pAyIv5WsLFoU4A_s-24" target="e8g9pAyIv5WsLFoU4A_s-5">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
