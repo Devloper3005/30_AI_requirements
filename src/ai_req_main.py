@@ -46,4 +46,6 @@ text = "This is a sample requirement. and this another one"
 embeddings = process_text(text, model, tokenizer)
 print(f"Embedding logits for text input: {embeddings.logits}") # Output of logits for the number of labels
 
+
 # %%
+# ...existing code...
