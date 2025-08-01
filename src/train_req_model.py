@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer, BertForSequenceClassification
 from torch.optim import AdamW
-
+#test
 class RequirementsDataset(Dataset):
     def __init__(self, jsonl_path, tokenizer, label_map):
         self.samples = []
@@ -30,10 +30,22 @@ if __name__ == "__main__":
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
     model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=len(label_map))
 
+    # Freeze all layers except encoder.layer.8, 9, 10, 11 and the classifier
+    for name, param in model.named_parameters():
+        # Only unfreeze last 4 layers and classifier
+        if not (
+            name.startswith("bert.encoder.layer.8") or
+            name.startswith("bert.encoder.layer.9") or
+            name.startswith("bert.encoder.layer.10") or
+            name.startswith("bert.encoder.layer.11") or
+            name.startswith("classifier")
+        ):
+            param.requires_grad = False
+
     dataset = RequirementsDataset("requirements_for_llm.jsonl", tokenizer, label_map)
     dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
 
-    optimizer = AdamW(model.parameters(), lr=2e-5)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=2e-5)
     model.train()
     for epoch in range(3):
         for batch in dataloader:

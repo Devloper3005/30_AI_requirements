@@ -1,7 +1,7 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 
-# Load trained model and tokenizer
+# Load trained model and tokenizer#test
 model = BertForSequenceClassification.from_pretrained("bert_req_eval_model")
 tokenizer = BertTokenizer.from_pretrained("bert_req_eval_model")
 model.eval()
