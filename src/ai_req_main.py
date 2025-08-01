@@ -8,6 +8,7 @@ import transformers
 from transformers import BertConfig, BertModel, BertTokenizer  # BERT model and tokenizer
 from transformers import BertForSequenceClassification
 
+
 # %% # Load pre-trained BERT model and tokenizer
 
 def load_bert_model():
