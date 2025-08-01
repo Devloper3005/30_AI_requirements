@@ -1,0 +1,330 @@
+id,ForeignID,Primary Text,Artifact Type,ASIL,Supplier_1 Status,Supplier_1 Comment,OEM_1 Status,OEM_1 Reason,SourceID (static),isHeading,parentBinding,module
+63763,"=""1333225""",General,Heading,"","","","","","",true,"",63762
+63764,"=""1427232""",Scope,Heading,"","","","","","",true,63763,63762
+63765,"=""1508847""","This document specifies requirements regarding the update of certain parts of the application or basic-software. This also takes into account the different locations & processes in which updates will be carried out. (e.g. reprogramming in a service workshop, reprogramming over the air, etc.). It is also required to support partial updates of certican modules of the application or basic-software in the component in regards to all relevant dependencies (e.g. software-software, software-hardware...). This document is considered as an addendum to refered Daimler diagnostics standards.",Information,"","","","","","",false,63764,63762
+63766,"=""1508880""",Generally it is necessary to enable full parallelity regarding all partial processes (e.g. memory erase) to allow for minimal update-duration.,Information,"","","","","","",false,63764,63762
+63767,"=""1508881""","All features for software-update must comply with Daimler diagnostic specifications, ISO-standards and applicable documents.",Information,"","","","","","",false,63764,63762
+63768,"=""1508856""",All vehicle variants shall be supported in diagnostic description.,Requirement,"",partly agreed,"2023-06-21 Rogge, Vinay:
+Diagnostic description is in the CDD files. Variant coding is available according Feature Plan.",accepted,211208ub,"",false,63764,63762
+63769,"=""1508857""",The vehicle variants will be handed out during development.,Information,"","","","","","",false,63764,63762
+63770,"=""1508858""","Due to different market/project specific requirements, selective latching and/or releasing of individual functions shall be provided.",Requirement,"",partly agreed,"2023-06-21 Rogge, Vinay:
+Individual functions are understood as variant coding implemented according Feature Plan.",accepted,"230929ub
+
+211208ub","",false,63764,63762
+63771,"=""1508861""",The implementation of this coding information shall be done until an adjusted date.,Requirement,"",agreed,"",accepted,211208ub,"",false,63764,63762
+63772,"=""1508865""",The present specification mainly addresses the scope of serial parts but not development.,Requirement,"",not agreed,"2023-06-05 Rogge:
+Requirements are understood for serial parts if not otherwise stated. Implementation according Feature Planning. Requirement here is not concreate, not testable, therefore here not agreed.",accepted,211208ub,"",false,63764,63762
+63773,"=""1427194""",Further Applicable Documents,Heading,"","","","","","",true,63763,63762
+63774,"=""1512651""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-05 Rogge:
+Acceptance according evaluation of IMU_MGU List (new DNG Module).",accepted,"230929ub
+
+211208ub","",false,63773,63762
+63775,"=""1420860""",System Requirements,Heading,"","","","","","",true,"",63762
+63776,"=""1426231""",Flash Access,Heading,"","","","","","",true,63775,63762
+63777,"=""1437190""",Each compute node shall provide hardware support (links and interfaces) to be able to flash its program memory using the in-series flashing process.,Requirement,"",agreed,"",accepted,211208ub,"",false,63776,63762
+63778,"=""1437196""",The reprogramming interface to any diagnostic instance must be realized only via the main ethernet (100MBit). ,Requirement,"",not agreed,"2023-01-18 Rogge, Vinay:
+N.A. for Stg IMU / MMP2.11 (no ethernet interface).
+
+N.A. for IMU",accepted,"230313ub
+
+211208ub","",false,63776,63762
+63779,"=""1508947""","If components are present in the system with other bus systems, this shall be taken into account accordingly and an internal routing shall be implemented in the IDC from Ethernet to the other bus. ",Requirement,"",not agreed,"2023-01-18 Rogge, Vinay:
+N.A. for Stg IMU / MMP2.11 (no ethernet interface).
+
+N.A. for IMU",accepted,"230313ub
+
+211208ub","",false,63776,63762
+63780,"=""1437197""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-01-18 Rogge, Vinay:
+N.A. for Stg IMU / MMP2.11.
+
+N.A. for IMU",accepted,"230313ub
+
+211208ub","",false,63776,63762
+63781,"=""1437198""",The remote access for flashing is realized via Ramses 2.0. (Onboard tester),Requirement,"",partly agreed,"2023-01-18 Rogge, Vinay:
+Is Ramses 2.0 like an additional diagnostics tester path(i.e. Internal Tester) or any specific implementation ? Our understanding: Onboard tester will be implemented to do remote flashing via Ramses 2.0",accepted,"230313ub: Ramses is an internal tester as Monaco for example is an external tester.
+
+211208ub","",false,63776,63762
+63782,"=""1426503""",High speed flash access,Heading,"","","","","","",true,63776,63762
+63783,"=""1437192""","If Gigabit-connection is needed for efficent and fast flashing to ensure flash timing requested by standard diagnostic, the supplier shall initiate a request to the customer.",Requirement,"",not agreed,Not applicable as MMP2 uses CAN,accepted,211208ub,"",false,63782,63762
+63784,"=""1426818""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Heading,"","","","","","",true,63776,63762
+63785,"=""1437193""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-29 Rogge, Vinay:
+ It's like an additional diagnostics tester path  with agreed reprogramming features for IMU.
+
+Is Remote Update - OTA/OFR  (1426818) required ? 
+If yes, it's like an additional diagnostics tester path(i.e. Internal Tester) or any specific implementation. Onboard tester will be implemented via a remote tester (OTA/OFR)",accepted,"230929ub
+
+211208ub","",false,63784,63762
+63786,"=""1437194""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-03-30 Rogge:
+Delta flashing and OFR (on-the-fly) is not required (see DNG module SW ForeignID 2005705: OEM_1 Reason)",accepted,"230929ub
+
+211208ub","",false,63784,63762
+63787,"=""1619565""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-03-30 Rogge:
+Delta flashing and OFR (on-the-fly) is not required (see DNG module SW ForeignID 2005705: OEM_1 Reason)
+
+Concept for delta flashing needs to be derived jointly (Daimler and RB)",accepted,"230929ub
+
+211208ub","",false,63784,63762
+63788,"=""1437195""",In particular for frequent updates which require more than the required 450 seconds this feature is relevant.,Requirement,"",not agreed,"2023-07-05 Rogge:
+Delta flashing and OFR (on-the-fly) is not required (see DNG module SW ForeignID 2005705: OEM_1 Reason)
+",accepted,"230929ub
+
+211208ub","",false,63784,63762
+63789,"=""1515317""",Flash infrastructure,Heading,"","","","","","",true,63775,63762
+63790,"=""1515325""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"",accepted,211208ub,"",false,63789,63762
+63791,"=""1426612""",Flash duration,Heading,"","","","","","",true,63775,63762
+63792,"=""1333227""",The final reprogramming mechanism for the entire system shall not take longer than 450s.,Requirement,"",partly agreed,"2023-06-22 Rogge, Vinay:
+Depends also an Security features, depends on heterogeous Design.
+
+Has to be refined as time specific for IMU.",accepted,"230929ub
+
+211208ub","",false,63791,63762
+63793,"=""1437199""",It shall be possible to flash the components simultaneously in the system.,Requirement,"",partly agreed,"If flashing of IMU3 shall happen via IMU2 (via IDC Satellite),
+it can not run parallel to the flashing of IMU2 (due to the needed routing functionality)",accepted,"230929ub
+
+211208ub","",false,63791,63762
+63794,"=""1482246""","If components prevent while be flashed other components being flashed, the supplier shall immediatly communicate to customer.",Requirement,"",agreed,"If flashing of IMU3 shall happen via IMU2 (via IDC Satellite),
+it can not run parallel to the flashing of IMU2 (due to the needed routing functionality)",accepted,"230929ub
+
+211208ub","",false,63791,63762
+63795,"=""1426933""",Delta flashing 3 Diff,Heading,"","","","","","",true,63791,63762
+63796,"=""1437201""",3-Diff shall be supported if OFR not required.,Requirement,"",not agreed,"OFR is required, therefore 3-Diff will not be supported",accepted,"220208ub: 3diff also for IMU not required
+
+2021-12-13 CH: OFR is not required??
+2022/02/14: soe/CF: If OFR is supported, 3 Diff is not required.","",false,63795,63762
+63797,"=""1427126""",Flash partitions,Heading,"","","","","","",true,63791,63762
+63798,"=""1437202""",Several flash partitions are to be provided,Requirement,"",agreed,"",accepted,211208ub,"",false,63797,63762
+63799,"=""1437203""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Information,"","","","","","",false,63797,63762
+63800,"=""1426678""",Shadow Mode,Heading,"","","","","","",true,63775,63762
+63801,"=""1437204""","Shadow mode: running beta versions of software in the background without influence to functional behaviour of ""official"" software to collect data with new or updated algorithms",Information,"","","","","","",false,63800,63762
+63802,"=""1523833""",Shadow Mode software shall be flashed via the standard flash access & standard flash infrastructures.,Requirement,"",not agreed,"Not applicable as per 1512679, From current Point of View, support of shadow mode is not required for components
+other than IDC.",accepted,"2021-12-13 CH: no shadow mode planned, right? accepted?
+2022/02/14: soe/CPF: shadow mode not required","",false,63800,63762
+63803,"=""1437205""",The customer is requested to share the technical details with Daimler if there are further requirements for diagnostic and / or flashing.,Requirement,"",not agreed,"Not applicable as per 1512679, From current Point of View, support of shadow mode is not required for components
+other than IDC.",accepted,"220208ub; requirement not relevant for IMU
+
+2021-12-13 CH: no shadow mode planned, right? accepted?
+2022/02/14: soe/CPF: shadow mode not required","",false,63800,63762
+63804,"=""1504131""","At least, identification information (e.g. part numbers) for shadow mode application shall be provided via diagnostics.",Requirement,"",not agreed,"Not applicable as per 1512679, From current Point of View, support of shadow mode is not required for components
+other than IDC.",accepted,"2021-12-13 CH: no shadow mode planned, right? accepted?
+2022/02/14: soe/CPF: shadow mode not required","",false,63800,63762
+63805,"=""1512679""","From current Point of View, support of shadow mode is not required for components other than IDC.",Information,"","","","","","",false,63800,63762
+63806,"=""1488558""",Dependencies flashing,Heading,"","","","","","",true,63775,63762
+63807,"=""1488636""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Information,"","","","","","",false,63806,63762
+63808,"=""1488637""","In this context, hardware and/ or software dependencies should be considered with.",Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023-08-24 Neves: (Answer from MB) No ToDo for the IMU, flash management",accepted,"230929ub
+
+211208ub","",false,63806,63762
+63809,"=""1488559""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Heading,"","","","","","",true,63806,63762
+63810,"=""1488571""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+Is this requirement meant to be implemented into the IMU or relevant just for the management of software updates/versions?
+
+2023-08-24 Neves: (Answer from MB) No ToDo for the IMU, flash management",accepted,"230929ub
+
+211208ub","",false,63809,63762
+63811,"=""1519185""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023_08_11 Neves: (Answer from MB): HW-SW compatibility check. Current decision is not to implement it as only 1HW variant is planned for series. If HW changes are needed in series production which leads to HW-SW incompatibility, then this topic should be reconsidered.",accepted,"230929ub
+
+211208ub","",false,63809,63762
+63812,"=""1488561""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Heading,"","","","","","",true,63806,63762
+63813,"=""1489249""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023-08-24 Neves: (Answer from MB) This artifact deals with dependencies when flashing the ADAS system in conjunction with the entire vehicle. No To do for the IMU itself.",accepted,"230929ub
+
+211208ub","",false,63812,63762
+63814,"=""1519186""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023-08-24 Neves: (Answer from MB) No ToDo for the IMU, flash management",accepted,"230929ub
+
+211208ub","",false,63812,63762
+63815,"=""1420861""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Heading,"","","","","","",true,"",63762
+63816,"=""1437215""",The component shall be initially flashed at the supplier.,Requirement,"",agreed,"",accepted,211208ub,"",false,63815,63762
+63817,"=""1437218""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-27 Rogge:
+Supplier_Status of referenced documents according IMU_MGU List.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63818,"=""1437219""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"",accepted,211208ub,"",false,63815,63762
+63819,"=""1437222""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-22 Rogge, Vinay:
+According evaluation of MGU_IMU_List.
+",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63820,"=""1437220""","A special flash procedure which reflects dependencies between processing nodes and different flash access ports (e.g., special ""high performance gigabit port"") shall be coordinated with Daimler diagnostic development department.",Requirement,"",not agreed,"2023-06-22 Rogge, Vinay:
+This requirement is applicable for Ethernet-ECUs, IMU has CANFD ->set to not agreed.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63821,"=""1437221""","The requirements of this chapter are valid for all flash reprogramming procedures, independend of the type of datablock (bootloader, application, data). ",Requirement,"",partly agreed,"2023-06-30  Rogge:
+This will be evaluated with every requirement of this chapter.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63822,"=""1437223""",Reprogramming of a diagnostic instance must be possible independently from the actual clamp-state (ISW_STAT).,Requirement,"",agreed,"",accepted,211208ub,"",false,63815,63762
+63823,"=""1437224""","If the reprogramming-attempt is aborted (e.g. lost of connection to tester), the diagnostic instance must detect the abortion.",Requirement,"",partly agreed,"2023-06-22 Rogge, Vinay:
+When reprogramming is aborted, bootloader will detect it and control will stay in boot mode.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63824,"=""1437225""",If an abortion is detected the diagnostic instance must immediately be ready to be reprogrammed again without any special investigation (like clamp30-reset).,Requirement,"",agreed,"",accepted,211208ub,"",false,63815,63762
+63825,"=""1437226""","If clamp30 is lost while reprogramming of the diagnostic instance, the diagnostic instance must be reprogrammable without any special investigation if clamp 30 is available again.",Requirement,"",partly agreed,"2023-07-04 Rogge, Vinay:
+ Acutal clamp state is not applicable but Network message is considered instead to keep IMU running.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63826,"=""1437227""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"2023-06-27 Rogge:
+Compatibility check is covered by rollback protection check for minimum SW version.",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63827,"=""1437230""","As of series production configuration, the control unit software must be backward compatible for all hardware variants.",Requirement,"",not agreed,"2023-06-29 Rogge, Vinay:
+Not applicable, only one hardware variant.
+",accepted,"230929ub
+
+211208ub","",false,63815,63762
+63828,"=""1427139""",Preconditions,Heading,"","","","","","",true,63815,63762
+63829,"=""1437231""","Flashing shall be done only in ""programming session"" (no flashing during active driving mode).
+        Details see {LINK id=67766 title=""Diagnostic States"" uri=https://rb-alm-08-p.de.bosch.com/rm/resources/TX_HA2Xm7AUEeyBRLzVsfr6Ig}",Requirement,"",partly agreed,"2023-06-21 Rogge, Vinay:
+Only vehicle speed is checked.",accepted,"230929ub
+
+211208ub","",false,63828,63762
+63830,"=""1437232""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-27 Rogge:
+Maximum number of reprogramming is checked as precondition. Temperature and Voltage is not checked as precondition.",accepted,"230929ub
+
+211208ub","",false,63828,63762
+63831,"=""1437235""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"",accepted,211208ub,"",false,63828,63762
+63832,"=""1437233""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"",accepted,211208ub,"",false,63828,63762
+63833,"=""1437234""","If the supplier applies additional preconditions, these preconditions must be named to the customer and agreed by the customer. ",Requirement,"",not agreed,"2023-06-27 Rogge:
+No additional preconditions are applied. -> not applicable, therefore not agreed",accepted,"230929ub
+
+211208ub","",false,63828,63762
+63834,"=""1437237""",Temperature,Heading,"","","","","","",true,63828,63762
+63835,"=""1437239""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole ambient temperature range. Therefore temperature is not checked as precondition. 
+Temperature range is defined in TCD (technical customer documentation).",accepted,"230929ub
+
+211208ub","",false,63834,63762
+63836,"=""1528511""",The minimum number must be defined during development together with the suppliers (with regard to frequent updates via remote),Requirement,"",not agreed,"	
+2023-06-27 Rogge:
+Reprogramming is allowed in the whole ambient temperature range. Therefore temperature is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63834,63762
+63837,"=""1437251""",The named temperature range must be agreed by Minerva.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole ambient temperature range. Therefore temperature is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63834,63762
+63838,"=""1437252""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole ambient temperature range. Therefore temperature is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63834,63762
+63839,"=""1437253""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole ambient temperature range. Therefore temperature is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63834,63762
+63840,"=""1437242""",Measured voltage,Heading,"","","","","","",true,63828,63762
+63841,"=""1437244""","To prevent that bad voltage conditions leads to unsuccessfull reprogramming, a suitable range must be defined where reprogramming is allowed.",Requirement,"",partly agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole operational supply voltage range. Therefore supply voltage is not checked as precondition. 
+Operational voltage range is defined in TCD (technical customer documentation).",accepted,"230929ub
+
+211208ub","",false,63840,63762
+63842,"=""1437245""",The valid range for reprogramming of the diagnostic instance must be agreed between supplier and Minerva.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole operational supply voltage range. Therefore supply voltage is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63840,63762
+63843,"=""1437246""",Default-Range: [7.0V ... 16.0V],Information,"","","","","","",false,63840,63762
+63844,"=""1437247""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole operational supply voltage range. Therefore supply voltage is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63840,63762
+63845,"=""1437249""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-06-27 Rogge:
+Reprogramming is allowed in the whole operational supply voltage range. Therefore supply voltage is not checked as precondition. ",accepted,"230929ub
+
+211208ub","",false,63840,63762
+63846,"=""1437241""",Maximal number of reprogramming,Heading,"","","","","","",true,63828,63762
+63847,"=""1437255""",The supplier must define the maximal number of allowed reprogramming attempts.,Requirement,"",agreed,"2023-06-27 Rogge:
+Number of allowed reprogramming attempts is 1000 (Definition see ID 1437256 and 1437257).",accepted,"230929ub
+
+211208ub","",false,63846,63762
+63848,"=""1437256""",The supplier must guarantee that at least this maximum number of reprogramming attempts is possible. (data retention) ,Requirement,"",partly agreed,"2023-06-27 Rogge:
+1. Number of rewrites for code flash for microcontroller RH850 is 1000.
+2. Number of reprogramming attempts is 1000 (see ID 1437257)
+  ",accepted,"230929ub
+
+211208ub","",false,63846,63762
+63849,"=""1437257""",The maximal number of allowed reprogramming attempts must be at least 1000.,Requirement,"",partly agreed,"2023-06-27 Rogge:
+Number of allowed reprogramming attempts is 1000.",accepted,"230929ub
+
+211208ub","",false,63846,63762
+63850,"=""1437258""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-27 Rogge, Vinay:
+Implemented as part of Bosch internal diagnostics",accepted,"230929ub
+
+211208ub","",false,63846,63762
+63851,"=""1427140""",Post-processing,Heading,"","","","","","",true,63815,63762
+63852,"=""1437263""",Preventing damage by flashing incompatible SW-versions,Heading,"","","","","","",true,63851,63762
+63853,"=""1437264""","Software (bootloader, application, data) and hardware-versions of a diagnostic instance have to be compatible to each other.
+Flashing a software on an incompatible hardware may destroys the component because it leads to:
+--> destroyed hardware (e.g. illegal parameter for controller)
+--> diagnostic instance starts up into application but is dead lock in the application because of wrong software
+--> Flashing of the diagnostic instance is no longer possible",Information,"","","","","","",false,63852,63762
+63854,"=""1437265""",Special software-mechanisms must be implemented to the application and the bootloader to prevent destroying of the component by flashing  incompatible software a diagnostic instance.,Requirement,"",agreed,"",accepted,211208ub,"",false,63852,63762
+63855,"=""1437266""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023-08-24 Neves:  (Answer from MB) No ToDo for the IMU, flash management",accepted,"230929ub
+
+211208ub","",false,63852,63762
+63856,"=""1437267""","If the bootloader recognises an incompatibe software/ hardware combination, the diagnostic instance must stay in bootloader-mode an must not start the application-software.",Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023_08_11 Neves: (Answer from MB): HW-SW compatibility check. Current decision is not to implement it as only 1HW variant is planned for series. If HW changes are needed in series production which leads to HW-SW incompatibility, then this topic should be reconsidered.",accepted,"230929ub
+
+211208ub","",false,63852,63762
+63857,"=""1437268""",The implemented mechanism must be agreed by the customer.,Requirement,"",agreed,"",accepted,211208ub,"",false,63852,63762
+63858,"=""1437269""","If a change of application-software or component-hardware leads to new incompatibility, the supplier must inform Minerva.
+The change must must be agreed by the customer.  ",Requirement,"",agreed,"",accepted,211208ub,"",false,63852,63762
+63859,"=""1437270""",The supplier must deliver an overview listening all compatible software-/hardware-combination with any new released application-software and any new released hardware. ,Requirement,"",agreed,"",accepted,211208ub,"",false,63852,63762
+63860,"=""1437261""",Setting default values,Heading,"","","","","","",true,63851,63762
+63861,"=""1437272""",After reprogramming of the diagnistic instance the error-memory (chrono-stack) must be erased.,Requirement,"",not agreed,"2023-06-20 Vinay, Rogge:
+The error memory (Diagnostic Chrono Stack ) is a non-volatile memory. So, this will not be erased with Reprogramming.",accepted,"230929ub
+
+211208ub","",false,63860,63762
+63862,"=""1437273""","Learn and calibration values shall not be erased, but it shall coordinated between customer and supplier which values although shall be resetted to default.",Requirement,"",not agreed,"2023-06-27 Rogge:
+Initial functions like  learning and calibration are not implemented (see also DNG Module SW ID 2005712). Therefore this requirement is not applicable for IMU.",accepted,"230929ub
+
+211208ub","",false,63860,63762
+63863,"=""1437276""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",partly agreed,"2023-06-29 Rogge, Vinay:
+Only variant coding and calibration data are applicable on IMU.",accepted,"230929ub
+
+211208ub","",false,63860,63762
+63864,"=""1428830""",Bootloader,Heading,"","","","","","",true,63815,63762
+63865,"=""1428831""",CRRRS4242E This content cannot be exported because it contains malformed text or hyperlinks.,Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63866,"=""1428832""",The bootloader shall be flashable via normal communication interface.,Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63867,"=""1428833""",Flashing the Bootloader shall be done via Standard customer tooling.,Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63868,"=""1428834""","A supplier specific tooling for flashing the bootloader can be used, in this case, the supplier shall provide this tooling to the customer.",Requirement,"",not agreed,"2023-7-05 Rogge:
+No specific Tooling is used, Monaco Tool is used. Not applicable -> not agreed",accepted,"230929ub
+
+211208ub","",false,63864,63762
+63869,"=""1428835""",Abort of Bootloader flashing process shall not brick the component.,Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63870,"=""1428836""","In case of flash process abortion, reflashing shall be guaranteed.",Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63871,"=""1428837""",Bootloader update is not intended for use in series process.,Information,"","","","","","",false,63864,63762
+63872,"=""1428838""",Incompatible bootloader software with hardware shall avoid flashing the bootloader.,Requirement,"",not agreed,"2023-07-03 Rogge, Vinay:
+According meeting on 2023-06-30 status set to ""to clarifay"".
+
+2023_08_11 Neves: (Answer from MB): HW-SW compatibility check. Current decision is not to implement it as only 1HW variant is planned for series. If HW changes are needed in series production which leads to HW-SW incompatibility, then this topic should be reconsidered.",accepted,"230929ub
+
+211208ub","",false,63864,63762
+63873,"=""1428839""","If incompatibilities between bootloader and hardware occur, the hardware shall be exchanged (or updated internal, if applicable) by the supplier at the own expense.",Requirement,"",agreed,"",accepted,211208ub,"",false,63864,63762
+63874,"=""1420862""",Security,Heading,"","","","","","",true,"",63762
+63875,"=""1354086""","For all reprogramming scopes, the security requirements which are described in own modules shall be also taken into account.",Requirement,"",partly agreed,"2023-03-07 Rogge:
+Requirements according evaluation in the following DNG modules: Debugging Interfaces Security, Flashware Encryption, HSM Requirements, IMU Security, Penetration Testing, Rollback Protection, Secure Boot, Security Information)",accepted,"230929ub
+
+211208ub","",false,63874,63762
+
+METADATA
+Exported Artifact IDs=63763|63764|63765|63766|63767|63768|63769|63770|63771|63772|63773|63774|63775|63776|63777|63778|63779|63780|63781|63782|63783|63784|63785|63786|63787|63788|63789|63790|63791|63792|63793|63794|63795|63796|63797|63798|63799|63800|63801|63802|63803|63804|63805|63806|63807|63808|63809|63810|63811|63812|63813|63814|63815|63816|63817|63818|63819|63820|63821|63822|63823|63824|63825|63826|63827|63828|63829|63830|63831|63832|63833|63834|63835|63836|63837|63838|63839|63840|63841|63842|63843|63844|63845|63846|63847|63848|63849|63850|63851|63852|63853|63854|63855|63856|63857|63858|63859|63860|63861|63862|63863|63864|63865|63866|63867|63868|63869|63870|63871|63872|63873|63874|63875
+Export Project Area=https://rb-alm-08-p.de.bosch.com/rm/rm-projects/_WanoAKD9EeyqmKs83UZRFw/components/_AHQ-QKFLEeyqmKs83UZRFw
+Export Configuration=https://rb-alm-08-p.de.bosch.com/rm/cm/stream/_AHavRqFLEeyqmKs83UZRFw
+Export Locale=de
+Export Module=https://rb-alm-08-p.de.bosch.com/rm/resources/MD_j6qW6aFQEeyqmKs83UZRFw
+Export Errors (listed in cells)=32
