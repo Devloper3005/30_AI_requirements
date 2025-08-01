@@ -27,7 +27,7 @@ Generation 3: Global  usage
 	- Development of training database: 
 		○ Input data source 
 			§ Requirement specification from customer incl. MMP evaluation 
-			§ Technical Spefication MMP  
+			§ Technical Specification MMP  
 			
 		○ Input format 
 			§ PDF,
@@ -69,6 +69,7 @@ DeBERTa	|Enhanced attention	|Top accuracy on benchmarks|
 		○ LSTM 
 		○ Encoder/Decoder -> Autocoder 
 		○ Transformer..
+	Current status 01.08.25: Try with Bert Model 
 
 # Open questions: 
 	- Check approach from MIDAS and ETAS, R: Steffen
