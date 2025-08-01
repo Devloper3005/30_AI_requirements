@@ -53,7 +53,7 @@ def write_jsonl(requirements, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         for req in requirements:
             f.write(json.dumps(req, ensure_ascii=False) + '\n')
-
+# Main function
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python req_to_jsonl.py <input_file> <output_jsonl_file>")

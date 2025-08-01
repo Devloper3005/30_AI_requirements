@@ -24,7 +24,7 @@ class RequirementsDataset(Dataset):
         inputs = {k: v.squeeze(0) for k, v in inputs.items()}
         inputs['labels'] = torch.tensor(label)
         return inputs
-
+# Main function
 if __name__ == "__main__":
     label_map = {"agreed": 0, "partly agreed": 1, "not agreed": 2}
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")

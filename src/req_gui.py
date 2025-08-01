@@ -105,7 +105,7 @@ class ReqEvalApp:
             predicted_class = torch.argmax(logits, dim=1).item()
         result = self.reverse_label_map[predicted_class]
         self.result_label.config(text=f"Predicted supplier status: {result}")
-
+# Main function
 if __name__ == "__main__":
     root = tk.Tk()
     app = ReqEvalApp(root)

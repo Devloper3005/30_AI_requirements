@@ -15,7 +15,7 @@ def predict_supplier_status(text):
         logits = outputs.logits
         predicted_class = torch.argmax(logits, dim=1).item()
     return reverse_label_map[predicted_class]
-
+# Main function
 if __name__ == "__main__":
     print("Requirement Evaluation Tool")
     print("--------------------------")
