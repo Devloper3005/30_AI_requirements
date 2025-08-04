@@ -1,2 +1,3 @@
 my_env/
 bert_req_eval_model/
+.*__pycache__
