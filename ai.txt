@@ -1,0 +1,108 @@
+ARTIFICIAL INTELLIGENCE (AI)
+├── Symbolic AI (Rules, Logic, Reasoning)
+│   ├── Expert Systems (e.g., MYCIN)
+│   ├── Knowledge Graphs (e.g., Google KG, Wikidata)
+│   ├── Logic Programming (e.g., Prolog)
+│   └── Planning Systems (e.g., STRIPS, PDDL)
+│
+└── MACHINE LEARNING (ML)
+    ├── Classical ML
+    │   ├── Linear/Logistic Regression
+    │   ├── Decision Trees / Random Forests
+    │   ├── SVM (Support Vector Machines)
+    │   ├── k-NN (k-Nearest Neighbors)
+    │   ├── Clustering (K-Means, DBSCAN)
+    │   └── Dimensionality Reduction (PCA, t-SNE, UMAP)
+    │
+    └── Deep Learning (DL)
+        ├── Neural Network Basics
+        │   ├── Perceptrons
+        │   ├── Feedforward Neural Networks
+        │   ├── Backpropagation
+        │   └── Activation Functions (ReLU, Sigmoid, GELU)
+        │
+        ├── Language Models (NLP)
+        │   ├── RNN, LSTM, GRU
+        │   ├── Transformer Architecture
+        │   │   ├── Self-Attention Mechanism
+        │   │   ├── Positional Encoding
+        │   │   └── Multi-head Attention
+        │   ├── BERT (Masked LM, bidirectional)
+        │   ├── GPT (Causal LM, autoregressive)
+        │   ├── T5, BART (Seq2Seq Transformers)
+        │   └── Retrieval-Augmented Generation (RAG)
+        │
+        ├── Vision Models (CV)
+        │   ├── CNNs (Convolutional Neural Nets)
+        │   │   ├── ResNet, Inception, EfficientNet
+        │   │   └── Object Detection: YOLO, Faster R-CNN
+        │   ├── Vision Transformers (ViT, Swin Transformer)
+        │   ├── Image Embedding Models (CLIP, DINOv2)
+        │   └── Diffusion Models (Stable Diffusion, DALL·E)
+        │
+        └── Multimodal Models
+            ├── Text + Image
+            │   ├── CLIP (Contrastive Learning)
+            │   ├── Flamingo (DeepMind)
+            │   └── GPT-4o (OpenAI)
+            │
+            ├── Text + Audio
+            │   ├── Whisper (ASR model)
+            │   └── AudioLM, VALL-E (speech generation)
+            │
+            ├── Text + Code
+            │   ├── Codex
+            │   ├── Code LLaMA
+            │   └── StarCoder
+            │
+            └── Unified Models (All Modalities)
+                ├── Gemini (Google DeepMind)
+                ├── Claude 3.5 Sonnet (Anthropic)
+                ├── GPT-4o (OpenAI)
+                └── GigaGPT, xAI’s Grok (emerging)
+
+
+
+************************************************************************************************
+                   ┌────────────────────────────┐
+                   │  Product Data Ingestion    │
+                   │  - PDFs, manuals           │
+                   │  - Structured specs (CSV)  │
+                   └────────────┬───────────────┘
+                                ↓
+                 ┌───────────────────────────────┐
+                 │   Document Understanding AI   │
+                 │ - OCR, PDF parsing            │
+                 │ - Language + table + image    │
+                 └────────────┬──────────────────┘
+                              ↓
+      ┌────────────────────────────────────────────────────┐
+      │       Knowledge Extraction + Vector Embedding      │
+      │ - Convert specs into structured embeddings         │
+      │ - Use models like BERT, GPT, or custom encoder     │
+      └────────────┬───────────────────────────────────────┘
+                   ↓
+      ┌────────────────────────────────────┐
+      │        Vector Database (Memory)    │
+      │  FAISS / Pinecone / Chroma         │
+      └────────────────────────────────────┘
+                   ↑
+                   ↓
+      ┌────────────────────────────────────┐
+      │       Spec Matching Agent          │
+      │ - Retrieves relevant vendor specs  │
+      │ - Compares against customer input  │
+      │ - Uses LLM or rules for evaluation │
+      └────────────┬───────────────────────┘
+                   ↓
+      ┌────────────────────────────────────┐
+      │  Output Layer / UI / API           │
+      │ - Match score & explanation        │
+      │ - Alternatives / clarifications    │
+      │ - Export (PDF, email, API)         │
+      └────────────────────────────────────┘
+
+
+
+The memory aspect is the vector database layer, which is missing in your current implementation. 
+It enables your system to "remember" and search through all processed specs and requirements.
