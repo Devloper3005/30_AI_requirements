@@ -32,10 +32,10 @@ class RequirementsDataset(Dataset):
         return inputs
 
 def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True, 
-                batch_size=8, epochs=3, train_all_layers=False, lr=3e-5, 
-                callbacks=None):
+                batch_size=8, epochs=3, train_all_layers=False, lr=None, 
+                callbacks=None, find_lr=True):
     """
-    Train requirement evaluation model with improved architecture
+    Train requirement evaluation model with improved architecture and optional learning rate search
     
     Args:
         data_path: Path to training JSONL file
@@ -194,6 +194,21 @@ if __name__ == "__main__":
     epochs = int(input("Enter number of epochs (default 3): ") or "3")
     train_all = input("Train all layers? (y/n): ").lower() == 'y'
     model_dir = input("Enter model directory (default 'bert_req_eval_model'): ") or "bert_req_eval_model"
+    find_lr = input("Perform learning rate search? (y/n): ").lower() == 'y'
+    
+    if find_lr:
+        from lr_search import find_optimal_lr
+        print("\nPerforming learning rate search...")
+        optimal_lr, _ = find_optimal_lr(
+            data_path=data_path,
+            model_dir=model_dir,
+            use_roberta=use_roberta,
+            batch_size=batch_size,
+            callbacks={'on_log': lambda msg: print(msg)}
+        )
+        print(f"\nOptimal learning rate found: {optimal_lr}")
+    else:
+        optimal_lr = 3e-5  # default learning rate
     
     train_model(
         data_path, 
@@ -202,5 +217,7 @@ if __name__ == "__main__":
         batch_size=batch_size,
         epochs=epochs,
         train_all_layers=train_all,
+        lr=optimal_lr,
+        find_lr=False,
         callbacks={'on_log': lambda msg: print(msg)}
     )

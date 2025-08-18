@@ -106,3 +106,17 @@ ARTIFICIAL INTELLIGENCE (AI)
 
 The memory aspect is the vector database layer, which is missing in your current implementation. 
 It enables your system to "remember" and search through all processed specs and requirements.
+
+************************************************************************************************
+
+Need to train or add only last two additonal layers.
+Split the training data and validation data.
+we need to check the validation loss and not training loss.
+
+train_test_split: This method can split the data.
+https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+train_test_split — scikit-learn 1.7.1 documentation
+Gallery examples: Image denoising using kernel PCA Faces recognition example using eigenfaces and SVMs Model Complexity Influence Prediction Latency Lagged features for time series forecasting Prob...
+
+
+Determine the learning rate using parameter search.
