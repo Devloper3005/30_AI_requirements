@@ -1,0 +1,77 @@
+{
+  "feedback": {
+    "IMU shall support OBD": {
+      "prediction": "agreed",
+      "is_correct": true,
+      "confidence": 94.75083351135254,
+      "timestamp": "2025-08-18 18:31:01.469935"
+    },
+    "IMU shall support HSM": {
+      "prediction": "agreed",
+      "is_correct": true,
+      "confidence": 88.94758820533752,
+      "timestamp": "2025-08-18 19:35:22.325727"
+    },
+    "ethernet shall be supported": {
+      "prediction": "agreed",
+      "is_correct": false,
+      "confidence": 95.6903338432312,
+      "timestamp": "2025-08-18 19:36:18.285936"
+    },
+    "Ethernet shall not be supported": {
+      "prediction": "agreed",
+      "is_correct": false,
+      "confidence": 94.94932889938354,
+      "timestamp": "2025-08-18 19:36:55.007491"
+    },
+    "Ethernet shall be supported": {
+      "prediction": "agreed",
+      "is_correct": false,
+      "confidence": 87.14626431465149,
+      "timestamp": "2025-08-18 19:37:10.475566"
+    }
+  },
+  "hard_examples": [
+    {
+      "text": "ethernet shall be supported",
+      "prediction": "agreed",
+      "confidence": 95.6903338432312
+    },
+    {
+      "text": "Ethernet shall not be supported",
+      "prediction": "agreed",
+      "confidence": 94.94932889938354
+    },
+    {
+      "text": "Ethernet shall be supported",
+      "prediction": "agreed",
+      "confidence": 87.14626431465149
+    }
+  ],
+  "corrections": [
+    {
+      "text": "ethernet shall be supported",
+      "original_prediction": "agreed",
+      "corrected_status": "not agreed",
+      "timestamp": "2025-08-18 19:36:24.523662"
+    },
+    {
+      "text": "Ethernet shall be supported",
+      "original_prediction": "agreed",
+      "corrected_status": "not agreed",
+      "timestamp": "2025-08-18 19:36:42.024511"
+    },
+    {
+      "text": "Ethernet shall not be supported",
+      "original_prediction": "agreed",
+      "corrected_status": "not agreed",
+      "timestamp": "2025-08-18 19:36:57.081935"
+    },
+    {
+      "text": "Ethernet shall be supported",
+      "original_prediction": "agreed",
+      "corrected_status": "not agreed",
+      "timestamp": "2025-08-18 19:37:12.791886"
+    }
+  ]
+}

@@ -1,24 +1,32 @@
+"""
+Requirements Classification Model Training Module
+
+This module handles the training of models for requirements classification using BERT or RoBERTa.
+It includes dataset handling, model configuration, and training pipeline with progress monitoring.
+"""
+
 import json
 import torch
+import numpy as np
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Callable, Union
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertForSequenceClassification, RobertaTokenizer, RobertaForSequenceClassification
+from transformers import (
+    BertTokenizer, BertForSequenceClassification,
+    RobertaTokenizer, RobertaForSequenceClassification,
+    PreTrainedTokenizer, PreTrainedModel
+)
 from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
 import os
-import time
-import random
 import shutil
 import tempfile
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 class RequirementsDataset(Dataset):
-    def __init__(self, jsonl_path, tokenizer, label_map):
-        self.samples = []
-        with open(jsonl_path, encoding='utf-8') as f:
-            for line in f:
-                item = json.loads(line)
-                text = item['text']
-                label = label_map.get(item['supplier_status'].lower(), 0)
-                self.samples.append((text, label))
+    def __init__(self, texts, labels, tokenizer):
+        self.samples = list(zip(texts, labels))
         self.tokenizer = tokenizer
 
     def __len__(self):
@@ -31,20 +39,103 @@ class RequirementsDataset(Dataset):
         inputs['labels'] = torch.tensor(label)
         return inputs
 
-def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True, 
-                batch_size=8, epochs=3, train_all_layers=False, lr=None, 
-                callbacks=None, find_lr=True):
+def prepare_datasets(data_path, tokenizer, label_map, val_split=0.2, random_state=42):
     """
-    Train requirement evaluation model with improved architecture and optional learning rate search
+    Split data into training and validation sets with stratification.
+    """
+    samples = []
+    labels = []
+    with open(data_path, encoding='utf-8') as f:
+        for line in f:
+            item = json.loads(line)
+            samples.append(item['text'])
+            labels.append(label_map[item['supplier_status'].lower()])
+    
+    # Stratified split
+    X_train, X_val, y_train, y_val = train_test_split(
+        samples, labels, 
+        test_size=val_split, 
+        random_state=random_state,
+        stratify=labels
+    )
+    
+    return (
+        RequirementsDataset(X_train, y_train, tokenizer),
+        RequirementsDataset(X_val, y_val, tokenizer)
+    )
+
+class EarlyStopping:
+    def __init__(self, patience=3, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.best_loss = None
+        self.should_stop = False
+        self.best_model_state = None
+        
+    def __call__(self, val_loss, model_state):
+        if self.best_loss is None:
+            self.best_loss = val_loss
+            self.best_model_state = model_state
+        elif val_loss > self.best_loss - self.min_delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.should_stop = True
+        else:
+            self.best_loss = val_loss
+            self.best_model_state = model_state
+            self.counter = 0
+        return self.should_stop
+
+def plot_training_history(history, save_path=None):
+    """Plot training and validation metrics"""
+    plt.figure(figsize=(12, 4))
+    
+    # Loss plot
+    plt.subplot(1, 2, 1)
+    plt.plot(history['train_loss'], label='Training Loss')
+    plt.plot(history['val_loss'], label='Validation Loss')
+    plt.title('Loss Over Time')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    
+    # Accuracy plot
+    plt.subplot(1, 2, 2)
+    plt.plot(history['train_acc'], label='Training Accuracy')
+    plt.plot(history['val_acc'], label='Validation Accuracy')
+    plt.title('Accuracy Over Time')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    
+    if save_path:
+        plt.savefig(save_path)
+    plt.close()
+
+def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True, 
+                batch_size=8, epochs=3, lr=2e-5, callbacks=None, find_lr=True):
+    """
+    Train requirement evaluation model optimized for technical requirements classification.
+    
+    The model uses a partial fine-tuning approach, training the last 6 layers of the transformer
+    model plus the classification head. This architecture is chosen to:
+    1. Maintain basic language understanding in lower layers
+    2. Adapt middle and upper layers for technical/engineering domain
+    3. Balance between domain adaptation and preventing overfitting
+    
+    Layer Training Strategy:
+    - Layers 0-5: Frozen (basic language patterns)
+    - Layers 6-11: Trainable (domain adaptation)
+    - Classifier: Trainable (task-specific)
     
     Args:
-        data_path: Path to training JSONL file
-        model_dir: Directory to save model
-        use_roberta: Use RoBERTa (True) or BERT (False)
-        batch_size: Training batch size
-        epochs: Number of training epochs
-        train_all_layers: Whether to train all layers
-        lr: Learning rate
+        data_path: Path to training JSONL file containing requirements
+        model_dir: Directory to save the trained model
+        use_roberta: Use RoBERTa (True) or BERT (False). RoBERTa recommended for technical text
+        batch_size: Training batch size (default: 8)
+        epochs: Number of training epochs (default: 3)
+        lr: Learning rate (default: 2e-5). This rate is optimized for transformer fine-tuning
         callbacks: Dictionary of callback functions for progress updates
             - on_log(message): Called when logging a message
             - on_progress(step, total_steps): Called to update progress
@@ -90,21 +181,28 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
             model = BertForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=len(label_map))
         callbacks['on_log']("No existing model found. Training from scratch.")
     
-    # Freeze layers based on configuration
-    if not train_all_layers:
-        callbacks['on_log']("Freezing layers (training only last 4 layers)...")
-        # Note: RoBERTa uses slightly different naming
-        prefix = "roberta" if use_roberta else "bert"
-        
-        for name, param in model.named_parameters():
-            if not (
-                name.startswith(f"{prefix}.encoder.layer.8") or
-                name.startswith(f"{prefix}.encoder.layer.9") or
-                name.startswith(f"{prefix}.encoder.layer.10") or
-                name.startswith(f"{prefix}.encoder.layer.11") or
-                name.startswith("classifier")
-            ):
-                param.requires_grad = False
+    # Configure optimized layer architecture for technical requirements
+    prefix = "roberta" if use_roberta else "bert"
+    callbacks['on_log']("Configuring optimized layer architecture for technical requirements...")
+    callbacks['on_log']("• Freezing layers 0-5 (preserve basic language understanding)")
+    callbacks['on_log']("• Enabling layers 6-8 (technical domain adaptation)")
+    callbacks['on_log']("• Enabling layers 9-11 (requirements classification)")
+    
+    # Configure which layers to train
+    for name, param in model.named_parameters():
+        if not (
+            # Middle layers (6-8) for domain adaptation
+            name.startswith(f"{prefix}.encoder.layer.6") or
+            name.startswith(f"{prefix}.encoder.layer.7") or
+            name.startswith(f"{prefix}.encoder.layer.8") or
+            # Upper layers (9-11) for classification
+            name.startswith(f"{prefix}.encoder.layer.9") or
+            name.startswith(f"{prefix}.encoder.layer.10") or
+            name.startswith(f"{prefix}.encoder.layer.11") or
+            # Classification head always trained
+            name.startswith("classifier")
+        ):
+            param.requires_grad = False
     
     callbacks['on_log'](f"Loading dataset from {data_path}...")
     dataset = RequirementsDataset(data_path, tokenizer, label_map)
@@ -112,6 +210,10 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
     callbacks['on_log'](f"Dataset loaded with {len(dataset)} samples")
     
     # Setup optimizer with weight decay and learning rate scheduler
+    if lr is None:
+        lr = 2e-5  # Default learning rate for transformer fine-tuning
+    
+    callbacks['on_log'](f"Using learning rate: {lr}")
     optimizer = AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), 
         lr=lr,

@@ -2,6 +2,8 @@ import sys
 import json
 import torch
 import os
+import datetime
+import shutil
 import pandas as pd
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -9,13 +11,14 @@ from torch.optim import AdamW
 import tkinter as tk
 from tkinter import messagebox, filedialog, scrolledtext
 from tkinter import ttk
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image, ImageTk
 import csv
 import nlpaug.augmenter.word as naw
+from sklearn.model_selection import train_test_split
 
 # Import functions from other files
-from train_req_model import RequirementsDataset
+import train_req_model_v2
+from train_req_model_v2 import RequirementsDataset
 from test_req_model import predict_supplier_status
 from req_to_jsonl import parse_csv, parse_excel, write_jsonl
 
@@ -31,6 +34,32 @@ def contextual_augment(text, model_name="bert-base-uncased"):
     )
     return aug.augment(text)
 
+def prepare_datasets(data_path, tokenizer, label_map, val_split=0.2, random_state=42):
+    """
+    Split data into training and validation sets with stratification.
+    """
+    # Load all samples
+    samples = []
+    labels = []
+    with open(data_path, encoding='utf-8') as f:
+        for line in f:
+            item = json.loads(line)
+            samples.append(item['text'])
+            labels.append(label_map[item['supplier_status'].lower()])
+    
+    # Stratified split
+    X_train, X_val, y_train, y_val = train_test_split(
+        samples, labels, 
+        test_size=val_split, 
+        random_state=random_state,
+        stratify=labels
+    )
+    
+    return (
+        RequirementsDataset(X_train, y_train, tokenizer),
+        RequirementsDataset(X_val, y_val, tokenizer)
+    )
+
 class ReqEvalApp:
     def __init__(self, master):
         self.master = master
@@ -43,6 +72,28 @@ class ReqEvalApp:
         self.model = None
         self.tokenizer = None
         self.history = []
+        
+        # Storage for reinforcement learning
+        self.hard_examples = []  # Examples with low confidence
+        self.corrections = []    # User-corrected examples
+        
+        # Load existing feedback data if available
+        self.feedback_file = "feedback_data.json"
+        if os.path.exists(self.feedback_file):
+            try:
+                with open(self.feedback_file, 'r') as f:
+                    feedback_data = json.load(f)
+                    self.hard_examples = feedback_data.get('hard_examples', [])
+                    self.corrections = feedback_data.get('corrections', [])
+            except json.JSONDecodeError:
+                print("Error reading feedback data file")
+            except Exception as e:
+                print(f"Unexpected error loading feedback data: {str(e)}")
+        self.feedback_data = {}  # Stores feedback for each prediction
+        
+        # Load existing feedback if available
+        self.feedback_file = "feedback_data.json"
+        self.load_feedback()
         
         # Create notebook with tabs
         self.notebook = ttk.Notebook(master)
@@ -117,6 +168,10 @@ class ReqEvalApp:
             self.log_text.see(tk.END)
         except Exception as e:
             messagebox.showerror("Augmentation Error", f"Failed to augment data: {str(e)}")
+    def show_layer_info(self, info_text):
+        """Display information about the selected layer training strategy"""
+        self.layer_info_label.config(text=info_text)
+
     def setup_train_tab(self):
         frame = ttk.LabelFrame(self.train_tab, text="Model Training")
         frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -141,28 +196,64 @@ class ReqEvalApp:
         self.epochs = tk.IntVar(value=3)
         ttk.Spinbox(epoch_frame, from_=1, to=10, textvariable=self.epochs, width=5).pack(side="left", padx=5)
         
+        # Training parameters frame
+        training_params = ttk.LabelFrame(param_frame, text="Training Parameters")
+        training_params.pack(fill="x", pady=5, padx=5)
+        
         # Batch size
-        batch_frame = ttk.Frame(param_frame)
-        batch_frame.pack(fill="x", pady=5)
+        batch_frame = ttk.Frame(training_params)
+        batch_frame.pack(fill="x", pady=5, padx=5)
         ttk.Label(batch_frame, text="Batch Size:").pack(side="left")
         self.batch_size = tk.IntVar(value=8)
         ttk.Spinbox(batch_frame, from_=1, to=32, textvariable=self.batch_size, width=5).pack(side="left", padx=5)
+        ttk.Label(batch_frame, text="(smaller = less memory, larger = faster training)").pack(side="left", padx=5)
         
-        # Layer selection
+        # Number of epochs
+        epoch_frame = ttk.Frame(training_params)
+        epoch_frame.pack(fill="x", pady=5, padx=5)
+        ttk.Label(epoch_frame, text="Epochs:").pack(side="left")
+        self.num_epochs = tk.IntVar(value=3)
+        ttk.Spinbox(epoch_frame, from_=1, to=20, textvariable=self.num_epochs, width=5).pack(side="left", padx=5)
+        ttk.Label(epoch_frame, text="(more epochs = better learning but risk of overfitting)").pack(side="left", padx=5)
+        
+        # Layer architecture info
         layer_frame = ttk.Frame(param_frame)
         layer_frame.pack(fill="x", pady=5)
-        ttk.Label(layer_frame, text="Layers to Train:").pack(side="left")
+        ttk.Label(layer_frame, text="Model Architecture:", font=("", 9, "bold")).pack(side="left")
         
-        self.train_all_layers = tk.BooleanVar(value=False)
-        ttk.Radiobutton(layer_frame, text="Last 4 layers only", variable=self.train_all_layers, value=False).pack(side="left", padx=5)
-        ttk.Radiobutton(layer_frame, text="All layers", variable=self.train_all_layers, value=True).pack(side="left", padx=5)
+        # Info about the fixed layer architecture
+        layer_info = (
+            "Optimized 6-Layer Training:\n"
+            "• Layers 0-5: Frozen (preserves basic language understanding)\n"
+            "• Layers 6-8: Trained for technical terminology adaptation\n"
+            "• Layers 9-11: Specialized for requirements classification\n"
+            "• Classification Head: Fully trained for task optimization"
+        )
         
-        # Progress display
-        self.progress = ttk.Progressbar(frame, orient=tk.HORIZONTAL, length=600, mode='determinate')
-        self.progress.pack(fill="x", padx=10, pady=10)
+        layer_info_label = ttk.Label(layer_frame, text=layer_info, 
+                                   font=("", 8), justify="left",
+                                   wraplength=400)
+        layer_info_label.pack(side="left", padx=10, pady=5)
         
-        self.status_label = ttk.Label(frame, text="Ready to train")
-        self.status_label.pack(pady=5)
+        # Progress section
+        progress_frame = ttk.LabelFrame(frame, text="Training Progress")
+        progress_frame.pack(fill="x", padx=10, pady=5)
+        
+        # Progress bar
+        self.progress = ttk.Progressbar(progress_frame, orient=tk.HORIZONTAL, length=600, mode='determinate')
+        self.progress.pack(fill="x", padx=10, pady=(10,5))
+        
+        # Status labels frame (using grid for better alignment)
+        status_frame = ttk.Frame(progress_frame)
+        status_frame.pack(fill="x", padx=10, pady=(0,10))
+        
+        # Overall progress label
+        self.status_label = ttk.Label(status_frame, text="Ready to train", font=("", 9))
+        self.status_label.pack(side="left", pady=5)
+        
+        # Batch progress label
+        self.batch_status = ttk.Label(status_frame, text="", font=("", 9))
+        self.batch_status.pack(side="right", pady=5)
         
         # Training logs
         log_frame = ttk.LabelFrame(frame, text="Training Logs")
@@ -178,16 +269,6 @@ class ReqEvalApp:
         # Augment button
         self.augment_button = ttk.Button(frame, text="Augment Training Data", command=self.augment_training_data)
         self.augment_button.pack(pady=5)
-        
-        # Plot area for loss curve
-        self.figure = Figure(figsize=(6, 3), dpi=100)
-        self.plot = self.figure.add_subplot(111)
-        self.plot.set_title("Training Loss")
-        self.plot.set_xlabel("Epoch")
-        self.plot.set_ylabel("Loss")
-        
-        self.canvas = FigureCanvasTkAgg(self.figure, frame)
-        self.canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
     
     def setup_predict_tab(self):
         frame = ttk.LabelFrame(self.predict_tab, text="Requirement Evaluation")
@@ -203,6 +284,34 @@ class ReqEvalApp:
         
         ttk.Button(button_frame, text="Predict", command=self.predict_requirement).pack(side="left", padx=10)
         ttk.Button(button_frame, text="Clear", command=self.clear_prediction).pack(side="left")
+        
+        # Feedback frame
+        feedback_frame = ttk.LabelFrame(frame, text="Prediction Feedback")
+        feedback_frame.pack(fill="x", padx=10, pady=5)
+        
+        # Correction interface
+        correction_frame = ttk.Frame(feedback_frame)
+        correction_frame.pack(fill="x", pady=5)
+        ttk.Label(correction_frame, text="Correct Status:").pack(side="left", padx=5)
+        self.correction_var = tk.StringVar(value="")
+        for status in ["agreed", "partly agreed", "not agreed"]:
+            ttk.Radiobutton(correction_frame, text=status.capitalize(),
+                          variable=self.correction_var, value=status).pack(side="left", padx=5)
+        
+        # Feedback buttons frame
+        feedback_buttons = ttk.Frame(feedback_frame)
+        feedback_buttons.pack(fill="x", pady=5)
+        
+        ttk.Button(feedback_buttons, text="✓ Correct",
+                  command=lambda: self.record_feedback(True)).pack(side="left", padx=5)
+        ttk.Button(feedback_buttons, text="✗ Incorrect",
+                  command=lambda: self.record_feedback(False)).pack(side="left", padx=5)
+        ttk.Button(feedback_buttons, text="Submit Correction",
+                  command=self.submit_correction).pack(side="left", padx=5)
+        
+        # Reinforcement learning button
+        ttk.Button(feedback_buttons, text="Reinforce Model",
+                  command=self.reinforce_model).pack(side="right", padx=5)
         
         result_frame = ttk.LabelFrame(frame, text="Prediction Result")
         result_frame.pack(fill="x", padx=10, pady=10)
@@ -312,20 +421,75 @@ class ReqEvalApp:
     
     def update_model_info(self):
         info = []
-        info.append("Model Directory: bert_req_eval_model")
-        info.append(f"Model Type: {'RoBERTa' if getattr(self, 'model', None) and 'roberta' in str(type(self.model)).lower() else 'BERT'}")
-        info.append(f"Loss Function: CrossEntropyLoss")
-        info.append(f"Optimizer: AdamW")
-        info.append(f"Learning Rate: {getattr(self, 'lr', 3e-5)}")
+        
+        # Basic Model Information
+        info.append("=== Model Configuration ===")
+        info.append("Base Model: RoBERTa")
+        info.append("Model Variant: roberta-base")
+        info.append("Why RoBERTa for Requirements:")
+        info.append("  • Better technical text understanding")
+        info.append("  • Improved context processing")
+        info.append("  • Enhanced handling of formal language")
+        info.append("  • Superior performance on domain-specific tasks")
+        info.append(f"Model Status: {'Loaded' if self.model else 'Not Loaded'}")
+        info.append(f"Model Location: bert_req_eval_model")
+        info.append("")
+        
+        # Architecture Details
+        info.append("=== Model Architecture ===")
+        info.append("Base Architecture: RoBERTa (Technical Requirements Optimized)")
+        info.append("Total Layers: 12 transformer layers + classification head")
+        info.append("Layer Configuration:")
+        info.append("  • Layers 0-5: Frozen (Basic Language Understanding)")
+        info.append("    - Syntax and grammar processing")
+        info.append("    - Basic semantic relationships")
+        info.append("    - Token-level features")
+        info.append("  • Layers 6-8: Active (Domain Adaptation)")
+        info.append("    - Technical terminology processing")
+        info.append("    - Domain-specific patterns")
+        info.append("    - Contextual understanding")
+        info.append("  • Layers 9-11: Active (Task Specialization)")
+        info.append("    - Requirements classification")
+        info.append("    - Decision boundaries")
+        info.append("    - Category-specific features")
+        info.append("  • Classification Head: Active")
+        info.append("    - 3-way classification")
+        info.append("    - Softmax activation")
+        info.append("")
+        
+        # Training Configuration
+        info.append("=== Training Configuration ===")
+        info.append(f"Optimizer: AdamW with weight decay")
+        info.append(f"Learning Rate: {getattr(self, 'lr', 3e-5)} (Optimized for fine-tuning)")
         info.append(f"Batch Size: {self.batch_size.get() if hasattr(self, 'batch_size') else 'N/A'}")
-        info.append(f"Epochs: {self.epochs.get() if hasattr(self, 'epochs') else 'N/A'}")
-        info.append(f"Layers Trained: {'All layers' if self.train_all_layers.get() else 'Last 4 layers only'}")
-        info.append(f"Label Map: {self.label_map}")
-        info.append(f"Reverse Label Map: {self.reverse_label_map}")
+        info.append(f"Training Epochs: {self.epochs.get() if hasattr(self, 'epochs') else 'N/A'}")
+        info.append(f"Loss Function: CrossEntropyLoss (3-class classification)")
+        info.append("")
+        
+        # Data Processing
+        info.append("=== Data Processing ===")
         info.append(f"Tokenizer: {type(self.tokenizer).__name__ if self.tokenizer else 'N/A'}")
-        info.append(f"Model Loaded: {'Yes' if self.model else 'No'}")
-        info.append(f"Training Data File: {self.data_path.get() if hasattr(self, 'data_path') else 'N/A'}")
-        info.append(f"Augmentation: ContextualWordEmbsAug (BERT/RoBERTa)")
+        info.append("Max Sequence Length: 128 tokens")
+        info.append("Text Augmentation: ContextualWordEmbsAug (Technical domain)")
+        info.append(f"Training Data: {self.data_path.get() if hasattr(self, 'data_path') else 'N/A'}")
+        info.append("")
+        
+        # Classification Details
+        info.append("=== Classification Configuration ===")
+        info.append("Categories:")
+        for status, idx in self.label_map.items():
+            info.append(f"  • {status.capitalize()} (Class {idx})")
+        info.append("")
+        
+        # Reinforcement Learning
+        info.append("=== Reinforcement Learning Status ===")
+        hard_examples_count = len(getattr(self, 'hard_examples', []))
+        corrections_count = len(getattr(self, 'corrections', []))
+        info.append(f"Collected Hard Examples: {hard_examples_count}")
+        info.append(f"User Corrections: {corrections_count}")
+        if hasattr(self, 'feedback_data'):
+            total_feedback = len(self.feedback_data)
+            info.append(f"Total Feedback Entries: {total_feedback}")
 
         self.model_info_text.delete(1.0, tk.END)
         self.model_info_text.insert(tk.END, "\n".join(info))
@@ -435,23 +599,48 @@ class ReqEvalApp:
                 messagebox.showerror("Error", f"Training data file not found: {data_file}")
                 return
                 
-            # Reset status message at the beginning of training
+            # Reset status message and progress bar at the beginning of training
             self.status_label.config(text="Training in progress...")
             self.log_text.delete(1.0, tk.END)
-        
-            # Define callbacks for the training process
+            self.progress["value"] = 0
+            self.master.update_idletasks()
+            
+            # Track training progress
+            self.current_epoch = 0
+            self.total_epochs = 3  # Default value from train_req_model_v2
+            
+            # Define callbacks for training progress
             def on_log(msg):
                 self.log_text.insert(tk.END, msg + "\n")
                 self.log_text.see(tk.END)
                 self.master.update_idletasks()
             
-            def on_progress(step, total_steps):
-                self.progress["value"] = step
+            def on_progress(step, total):
+                # Calculate overall progress including epochs
+                overall_progress = (self.current_epoch * 100 + (step / total) * 100) / self.total_epochs
+                self.progress["value"] = overall_progress
+                
+                # Update status labels
+                self.status_label.config(
+                    text=f"Training Progress - Epoch {self.current_epoch + 1}/{self.total_epochs}"
+                )
+                self.batch_status.config(
+                    text=f"Batch: {step}/{total}"
+                )
                 self.master.update_idletasks()
             
-            def on_epoch_end(epoch, loss):
-                # Nothing extra needed here - handled by on_log
-                pass
+            def on_epoch_end(epoch, metrics):
+                self.current_epoch = metrics['epoch']
+                msg = (f"Epoch {metrics['epoch']}/{self.total_epochs}: "
+                      f"Train Loss = {metrics['train_loss']:.4f}, "
+                      f"Train Acc = {metrics['train_acc']:.4f}, "
+                      f"Val Loss = {metrics['val_loss']:.4f}, "
+                      f"Val Acc = {metrics['val_acc']:.4f}\n")
+                self.log_text.insert(tk.END, msg)
+                self.log_text.see(tk.END)
+                # Update progress bar to show completed epoch
+                self.progress["value"] = (metrics['epoch'] * 100) / self.total_epochs
+                self.master.update_idletasks()
             
             callbacks = {
                 'on_log': on_log,
@@ -459,51 +648,86 @@ class ReqEvalApp:
                 'on_epoch_end': on_epoch_end
             }
             
-            # Use train_model from train_req_model.py
-            from train_req_model import train_model as train_requirement_model
-            
-            # Clear existing models
-            if hasattr(self, 'model') and self.model is not None:
-                del self.model
-            if hasattr(self, 'tokenizer') and self.tokenizer is not None:
-                del self.tokenizer
-            
-            # Prepare UI for training
-            num_epochs = self.epochs.get()
+            # Get training parameters from GUI
             batch_size = self.batch_size.get()
-            self.progress["maximum"] = 100  # Will be updated by the callback
+            epochs = self.num_epochs.get()
             
-            # Run the training process
-            model, tokenizer, history = train_requirement_model(
-                data_file,
-                model_dir="bert_req_eval_model",
-                use_roberta=True,
-                batch_size=batch_size,
-                epochs=num_epochs,
-                train_all_layers=self.train_all_layers.get(),
-                callbacks=callbacks
-            )
+            # Update total_epochs for progress tracking
+            self.total_epochs = epochs
             
-            # Check if model was saved to a different directory
-            actual_model_dir = history.get('model_dir', "bert_req_eval_model")
-            if actual_model_dir != "bert_req_eval_model":
-                self.log_text.insert(tk.END, f"Note: Model was saved to alternate location: {actual_model_dir}\n")
-
-            # Update plot with training history
-            self.plot.clear()
-            self.plot.set_title("Training Loss")
-            self.plot.set_xlabel("Epoch")
-            self.plot.set_ylabel("Loss")
-            epochs = list(range(1, num_epochs + 1))
-            self.plot.plot(epochs, history['epoch_losses'], 'b-')
-            self.canvas.draw()
-            
-            # Load the trained model for use in the app
-            self.model = model
-            self.tokenizer = tokenizer
-            
-            self.status_label.config(text="Training complete!")
-            messagebox.showinfo("Success", "Model trained and saved successfully!")
+            try:
+                # Clear any existing model from memory
+                if hasattr(self, 'model'):
+                    del self.model
+                if hasattr(self, 'tokenizer'):
+                    del self.tokenizer
+                
+                import gc
+                gc.collect()  # Force garbage collection
+                
+                # Call the training function with callbacks and user parameters
+                self.model, self.tokenizer, history = train_req_model_v2.train_model(
+                    data_path=data_file,
+                    model_dir="bert_req_eval_model",
+                    use_roberta=True,
+                    batch_size=batch_size,
+                    epochs=epochs,
+                    callbacks=callbacks
+                )
+                
+                # Ensure progress bar shows 100% completion
+                self.progress["value"] = 100
+                
+                # Update status with final metrics
+                final_metrics = {
+                    'train_loss': history['train_loss'][-1],
+                    'train_acc': history['train_acc'][-1],
+                    'val_loss': history['val_loss'][-1],
+                    'val_acc': history['val_acc'][-1]
+                }
+                
+                completion_message = (
+                    f"Training completed successfully!\n"
+                    f"Final metrics:\n"
+                    f"Training Accuracy: {final_metrics['train_acc']:.2%}\n"
+                    f"Validation Accuracy: {final_metrics['val_acc']:.2%}"
+                )
+                
+                # Display completion message
+                self.status_label.config(text="✓ Training completed successfully!")
+                self.log_text.insert(tk.END, "\n" + completion_message + "\n")
+                self.log_text.see(tk.END)
+                messagebox.showinfo("Training Complete", completion_message)
+                
+                # Show training plot if available
+                if os.path.exists("bert_req_eval_model/training_history.png"):
+                    img = Image.open("bert_req_eval_model/training_history.png")
+                    img = img.resize((600, 300), Image.Resampling.LANCZOS)
+                    photo = ImageTk.PhotoImage(img)
+                    
+                    # Create a new window for the plot
+                    plot_window = tk.Toplevel(self.master)
+                    plot_window.title("Training History")
+                    
+                    # Add the image to a label
+                    label = ttk.Label(plot_window, image=photo)
+                    label.image = photo  # Keep a reference to prevent garbage collection
+                    label.pack()
+                
+            except Exception as e:
+                error_msg = f"Error during model saving: {str(e)}\n\nYour training progress is not lost - the model will be loaded from the last successful save."
+                self.log_text.insert(tk.END, f"\nError: {str(e)}\n")
+                messagebox.showerror("Training Error", error_msg)
+                
+                # Try to recover the model if possible
+                if os.path.exists("bert_req_eval_model.bak"):
+                    try:
+                        if os.path.exists("bert_req_eval_model"):
+                            shutil.rmtree("bert_req_eval_model")
+                        os.rename("bert_req_eval_model.bak", "bert_req_eval_model")
+                        self.log_text.insert(tk.END, "Successfully restored model from backup.\n")
+                    except Exception as restore_error:
+                        self.log_text.insert(tk.END, f"Error restoring backup: {str(restore_error)}\n")
             
         except Exception as e:
             self.log_text.insert(tk.END, f"Error during training: {str(e)}\n")
@@ -531,11 +755,24 @@ class ReqEvalApp:
             
             self.result_label.config(text=f"Predicted: {result.upper()}")
             
+            # Store last prediction and confidence for feedback
+            self.last_prediction = result
+            self.last_confidence = max(confidence_scores.values())
+            
             # Update confidence bars
             for status in ["agreed", "partly agreed", "not agreed"]:
                 prob_value = confidence_scores[status]
                 self.confidence_bars[status]["value"] = prob_value
                 self.confidence_bars[status+"_label"].config(text=f"{prob_value:.1f}%")
+                
+            # Check if this is a low confidence prediction
+            if self.last_confidence < 0.8:
+                self.result_label.config(text=f"Predicted: {result.upper()} (Low Confidence)")
+                self.hard_examples.append({
+                    'text': req_text,
+                    'prediction': result,
+                    'confidence': self.last_confidence
+                })
             
             # Add to history
             self.history.append((req_text, result))
@@ -586,6 +823,96 @@ class ReqEvalApp:
             self.history = []
             for item in self.history_tree.get_children():
                 self.history_tree.delete(item)
+
+    def load_feedback(self):
+        """Load saved feedback and corrections"""
+        try:
+            if os.path.exists(self.feedback_file):
+                with open(self.feedback_file, 'r') as f:
+                    data = json.load(f)
+                    self.feedback_data = data.get('feedback', {})
+                    self.hard_examples = data.get('hard_examples', [])
+                    self.corrections = data.get('corrections', [])
+        except Exception as e:
+            print(f"Error loading feedback data: {e}")
+
+    def save_feedback(self):
+        """Save feedback and corrections"""
+        try:
+            data = {
+                'feedback': self.feedback_data,
+                'hard_examples': self.hard_examples,
+                'corrections': self.corrections
+            }
+            with open(self.feedback_file, 'w') as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"Error saving feedback data: {e}")
+
+    def record_feedback(self, is_correct):
+        """Record user feedback on prediction"""
+        current_text = self.req_text.get("1.0", tk.END).strip()
+        if not current_text or not hasattr(self, 'last_prediction'):
+            messagebox.showwarning("Feedback Error", "No prediction to provide feedback for.")
+            return
+
+        # Store feedback
+        self.feedback_data[current_text] = {
+            'prediction': self.last_prediction,
+            'is_correct': is_correct,
+            'confidence': self.last_confidence,
+            'timestamp': str(datetime.datetime.now())
+        }
+
+        # If incorrect or low confidence, add to hard examples
+        if not is_correct or self.last_confidence < 0.8:
+            self.hard_examples.append({
+                'text': current_text,
+                'prediction': self.last_prediction,
+                'confidence': self.last_confidence
+            })
+
+        self.save_feedback()
+        messagebox.showinfo("Feedback Recorded", 
+                          "Thank you for your feedback! This will help improve the model.")
+
+    def submit_correction(self):
+        """Submit a correction for the current prediction"""
+        current_text = self.req_text.get("1.0", tk.END).strip()
+        correction = self.correction_var.get()
+
+        if not current_text or not correction:
+            messagebox.showwarning("Correction Error", 
+                                 "Please enter requirement text and select the correct status.")
+            return
+
+        # Store correction
+        self.corrections.append({
+            'text': current_text,
+            'original_prediction': getattr(self, 'last_prediction', None),
+            'corrected_status': correction,
+            'timestamp': str(datetime.datetime.now())
+        })
+
+        self.save_feedback()
+        messagebox.showinfo("Correction Recorded", 
+                          "Correction saved! This will be used in the next reinforcement training.")
+
+    def reinforce_model(self):
+        """Start reinforcement learning using collected feedback"""
+        if not self.corrections and not self.hard_examples:
+            messagebox.showinfo("Reinforcement Learning", 
+                              "No corrections or hard examples collected yet. "
+                              "Please provide feedback and corrections first.")
+            return
+
+        if messagebox.askyesno("Reinforce Model", 
+                             f"Start reinforcement learning with:\n"
+                             f"- {len(self.corrections)} corrections\n"
+                             f"- {len(self.hard_examples)} hard examples\n"
+                             f"This may take a while. Continue?"):
+            # Start reinforcement learning
+            self.train_model(reinforce_learning=True)
     
     def reset_gui(self):
         # Clear status label
