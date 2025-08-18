@@ -9,7 +9,6 @@ model = None
 tokenizer = None
 reverse_label_map = {0: "agreed", 1: "partly agreed", 2: "not agreed"}
 
-<<<<<<< HEAD
 def load_model():
     """Load the model and tokenizer if not already loaded"""
     global model, tokenizer
@@ -62,10 +61,6 @@ def predict_supplier_status(text):
     # Load model if not already loaded
     if model is None or tokenizer is None:
         model, tokenizer = load_model()
-        
-=======
-def predict_supplier_status(text, model, tokenizer):
->>>>>>> 8f3a9ced41c5225c70dc4de774ae8bea7d1f4f12
     inputs = tokenizer(text, return_tensors="pt", padding='max_length', truncation=True, max_length=128)
     with torch.no_grad():
         outputs = model(**inputs)
@@ -73,7 +68,6 @@ def predict_supplier_status(text, model, tokenizer):
         predicted_class = torch.argmax(logits, dim=1).item()
     return reverse_label_map[predicted_class]
 
-<<<<<<< HEAD
 def predict_with_confidence(text):
     """Predict supplier status with confidence scores"""
     global model, tokenizer
@@ -93,9 +87,6 @@ def predict_with_confidence(text):
     confidence_scores = {reverse_label_map[i]: float(probs[i]) * 100 for i in range(len(probs))}
     
     return result, confidence_scores
-
-=======
->>>>>>> 8f3a9ced41c5225c70dc4de774ae8bea7d1f4f12
 # Main function
 if __name__ == "__main__":
     # Load model when running as script
