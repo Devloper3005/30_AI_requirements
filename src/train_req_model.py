@@ -3,12 +3,16 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer, BertForSequenceClassification, RobertaTokenizer, RobertaForSequenceClassification
 from torch.optim import AdamW
+<<<<<<< HEAD
 from transformers import get_linear_schedule_with_warmup
 import os
 import time
 import random
 import shutil
 import tempfile
+=======
+#test
+>>>>>>> 8f3a9ced41c5225c70dc4de774ae8bea7d1f4f12
 
 class RequirementsDataset(Dataset):
     def __init__(self, jsonl_path, tokenizer, label_map):
@@ -31,6 +35,7 @@ class RequirementsDataset(Dataset):
         inputs['labels'] = torch.tensor(label)
         return inputs
 
+<<<<<<< HEAD
 def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True, 
                 batch_size=8, epochs=3, train_all_layers=False, lr=None, 
                 callbacks=None, find_lr=True):
@@ -67,6 +72,10 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
             callbacks[key] = lambda *args: None
     
     # Load appropriate model based on selection
+=======
+# Main function
+if __name__ == "__main__":
+>>>>>>> 8f3a9ced41c5225c70dc4de774ae8bea7d1f4f12
     label_map = {"agreed": 0, "partly agreed": 1, "not agreed": 2}
     
     if os.path.exists(model_dir) and os.path.exists(os.path.join(model_dir, "config.json")):
