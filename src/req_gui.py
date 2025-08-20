@@ -325,6 +325,24 @@ class ReqEvalApp:
         gpu_status_frame = ttk.Frame(gpu_frame)
         gpu_status_frame.pack(fill="x", pady=5, padx=5)
         
+        # Visualization option
+        visual_frame = ttk.LabelFrame(training_params, text="Visualization")
+        visual_frame.pack(fill="x", pady=5, padx=5)
+        
+        self.visualize_training = tk.BooleanVar(value=False)
+        ttk.Checkbutton(visual_frame, text="Show real-time layer visualization during training", 
+                      variable=self.visualize_training).pack(side="left", padx=5, pady=5)
+        
+        # Add two labels for explanation and performance note
+        info_frame = ttk.Frame(visual_frame)
+        info_frame.pack(fill="x", padx=5)
+        
+        ttk.Label(info_frame, text="(Shows activations, gradients and training metrics in real-time)",
+                font=("", 8, "italic")).pack(side="left", padx=5)
+        
+        ttk.Label(info_frame, text="Optional: may slightly reduce training speed",
+                font=("", 8, "italic"), foreground="#555555").pack(side="right", padx=5)
+        
         # GPU detection status
         gpu_info = ""
         if torch.cuda.is_available():
@@ -492,6 +510,19 @@ class ReqEvalApp:
         self.output_path = tk.StringVar(value="requirements_for_llm.jsonl")
         ttk.Entry(output_frame, textvariable=self.output_path, width=40).pack(side="left", padx=5)
         ttk.Button(output_frame, text="Browse", command=self.browse_output_file).pack(side="left")
+        
+        # Options frame
+        options_frame = ttk.Frame(frame)
+        options_frame.pack(fill="x", padx=10, pady=10)
+        
+        # Add append option
+        self.append_mode = tk.BooleanVar(value=False)
+        ttk.Checkbutton(options_frame, text="Append to existing JSONL (instead of overwrite)", 
+                      variable=self.append_mode).pack(side="left", padx=5)
+        
+        # Info label for append mode
+        ttk.Label(options_frame, text="Use this when processing multiple files", 
+                font=("", 8, "italic")).pack(side="left", padx=5)
         
         # Convert button
         button_frame = ttk.Frame(frame)
@@ -730,17 +761,50 @@ class ReqEvalApp:
                 messagebox.showerror("File Error", "Unsupported file type. Use .xlsx or .csv")
                 return
             
-            write_jsonl(requirements, output_file)
+            # Check if we should append
+            append_mode = self.append_mode.get()
             
-            self.convert_status.config(text=f"Converted {len(requirements)} requirements to {output_file}")
+            # Track the number of existing records for status message
+            existing_count = 0
+            if append_mode and os.path.exists(output_file):
+                try:
+                    with open(output_file, 'r', encoding='utf-8') as f:
+                        existing_count = sum(1 for _ in f)
+                except:
+                    existing_count = 0
+            
+            # Write or append to the file
+            if append_mode:
+                # Custom append function - first check if the file exists
+                if os.path.exists(output_file):
+                    # Append to existing file
+                    with open(output_file, 'a', encoding='utf-8') as f:
+                        for req in requirements:
+                            f.write(json.dumps(req, ensure_ascii=False) + '\n')
+                    status_text = f"Appended {len(requirements)} requirements to {output_file} (Total: {existing_count + len(requirements)})"
+                else:
+                    # File doesn't exist yet, just write normally
+                    write_jsonl(requirements, output_file)
+                    status_text = f"Created new file {output_file} with {len(requirements)} requirements"
+            else:
+                # Normal overwrite mode
+                write_jsonl(requirements, output_file)
+                status_text = f"Converted {len(requirements)} requirements to {output_file} (Overwrote existing file)"
+            
+            self.convert_status.config(text=status_text)
             
             # Preview output
             self.preview_text.delete(1.0, tk.END)
+            total_lines = 0
             with open(output_file, encoding='utf-8') as f:
                 for i, line in enumerate(f):
-                    if i >= 5:
-                        break
-                    self.preview_text.insert(tk.END, f"{line}\n")
+                    total_lines = i + 1
+                    if i < 5:
+                        self.preview_text.insert(tk.END, f"{line}\n")
+            
+            # Add summary at the end
+            if total_lines > 5:
+                self.preview_text.insert(tk.END, f"\n... and {total_lines - 5} more entries (total: {total_lines})")
                     
             messagebox.showinfo("Conversion Complete", f"Converted {len(requirements)} requirements to {output_file}")
             
@@ -823,6 +887,8 @@ class ReqEvalApp:
                 
                 # Call the training function with callbacks and user parameters
                 use_gpu = self.use_gpu.get() if hasattr(self, 'use_gpu') else True
+                visualize = self.visualize_training.get() if hasattr(self, 'visualize_training') else False
+                
                 self.model, self.tokenizer, history = train_req_model_v2.train_model(
                     data_path=data_file,
                     model_dir="bert_req_eval_model",
@@ -830,7 +896,9 @@ class ReqEvalApp:
                     batch_size=batch_size,
                     epochs=epochs,
                     callbacks=callbacks,
-                    use_gpu=use_gpu
+                    use_gpu=use_gpu,
+                    visualize=visualize,
+                    parent_window=self.master
                 )
                 
                 # Ensure progress bar shows 100% completion

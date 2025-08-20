@@ -174,7 +174,8 @@ def plot_training_history(history, save_dir):
     plt.close()
 
 def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True, 
-                batch_size=8, epochs=3, lr=2e-5, callbacks=None, use_gpu=True):
+                batch_size=8, epochs=3, lr=2e-5, callbacks=None, use_gpu=True,
+                visualize=False, parent_window=None):
     """
     Train requirement evaluation model with validation and early stopping.
     
@@ -187,6 +188,8 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
         lr (float): Learning rate
         callbacks (dict): Callback functions for progress tracking
         use_gpu (bool): Whether to use GPU acceleration if available
+        visualize (bool): Whether to show real-time layer visualization
+        parent_window: Parent tkinter window for visualization
     """
     # Remove any existing backup
     backup_dir = f"{model_dir}.bak"
@@ -285,6 +288,20 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
     
     model = model.to(device)
     
+    # Initialize the visualizer if requested
+    visualizer = None
+    if visualize:
+        try:
+            from model_visualizer import start_model_visualization
+            model_type = "roberta" if use_roberta else "bert"
+            callbacks['on_log'](f"Initializing real-time model visualization...")
+            visualizer = start_model_visualization(model, parent_window, model_type)
+        except Exception as e:
+            callbacks['on_log'](f"Visualization initialization failed: {str(e)}")
+            visualize = False
+    else:
+        callbacks['on_log'](f"Layer visualization disabled. Enable it in Training Parameters > Visualization for real-time insights.")
+    
     # Load and split the dataset
     callbacks['on_log'](f"Loading dataset from {os.path.basename(data_path)}...")
     train_dataset, val_dataset = prepare_datasets(data_path, tokenizer, label_map)
@@ -334,8 +351,15 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
             correct += (predictions == batch['labels']).sum().item()
             total += len(batch['labels'])
             
+            # Update progress and visualization
             if step % 10 == 0:
                 callbacks['on_progress'](step, len(train_loader))
+                
+                # Update batch-level metrics in visualization
+                if visualize and visualizer:
+                    batch_loss = loss.item()
+                    batch_acc = (predictions == batch['labels']).float().mean().item()
+                    visualizer.add_training_metrics(epoch, batch_loss, batch_acc)
         
         # Calculate training metrics
         train_loss = total_loss / len(train_loader)
@@ -348,6 +372,10 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
         history['val_loss'].append(val_loss)
+        
+        # Update visualization if active
+        if visualize and visualizer:
+            visualizer.add_training_metrics(epoch, train_loss, train_acc)
         history['val_acc'].append(val_acc)
         
         # Log progress
@@ -402,5 +430,10 @@ def train_model(data_path, model_dir="bert_req_eval_model", use_roberta=True,
         if os.path.exists(backup_dir) and not os.path.exists(model_dir):
             os.rename(backup_dir, model_dir)
         raise Exception(f"Error saving model: {str(e)}")
+    
+    # Keep visualization open if requested (user can close it manually)
+    if visualize and visualizer:
+        callbacks['on_log'](f"Training complete. Visualization window remains open for inspection.")
+        # Note: We don't automatically close the visualization so the user can examine it
     
     return model, tokenizer, history
