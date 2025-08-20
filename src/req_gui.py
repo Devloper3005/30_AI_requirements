@@ -28,10 +28,17 @@ from req_to_jsonl import parse_csv, parse_excel, write_jsonl
 # os.environ['HTTPS_PROXY'] = 'http://username:password@proxy.company.com:port'
 
 def contextual_augment(text, model_name="bert-base-uncased"):
+    # Determine device - use GPU if available
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
     # You can switch model_name to "roberta-base" if preferred
     aug = naw.ContextualWordEmbsAug(
-        model_path=model_name, action="substitute", device="cpu"
+        model_path=model_name, action="substitute", device=device
     )
+    
+    # Print info about which device is being used for augmentation
+    print(f"Data augmentation running on: {device}")
+    
     return aug.augment(text)
 
 def prepare_datasets(data_path, tokenizer, label_map, val_split=0.2, random_state=42):
@@ -67,6 +74,7 @@ class ReqEvalApp:
         master.geometry("800x700")
         master.configure(bg="#f0f0f0")
         
+        # Initialize all attributes first
         self.label_map = {"agreed": 0, "partly agreed": 1, "not agreed": 2}
         self.reverse_label_map = {v: k for k, v in self.label_map.items()}
         self.model = None
@@ -76,9 +84,36 @@ class ReqEvalApp:
         # Storage for reinforcement learning
         self.hard_examples = []  # Examples with low confidence
         self.corrections = []    # User-corrected examples
+        self.feedback_data = {}  # Stores feedback for each prediction
+        self.feedback_file = "feedback_data.json"
+        
+        # Initialize GUI status
+        self.gpu_status = "unknown"
+        
+        # Check GPU availability on startup
+        self.check_gpu_availability()
+        
+        # Create notebook with tabs
+        self.notebook = ttk.Notebook(self.master)
+        self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
+        
+    def check_gpu_availability(self):
+        """Check GPU availability and initialize CUDA"""
+        try:
+            # Try to initialize CUDA context at startup
+            if torch.cuda.is_available():
+                # Create a small tensor to initialize CUDA
+                _ = torch.zeros(1).cuda()
+                torch.cuda.synchronize()
+                print(f"CUDA initialized successfully. GPU: {torch.cuda.get_device_name(0)}")
+                self.gpu_status = "available"
+            else:
+                self.gpu_status = "unavailable"
+        except Exception as e:
+            print(f"CUDA initialization error: {str(e)}")
+            self.gpu_status = "error"
         
         # Load existing feedback data if available
-        self.feedback_file = "feedback_data.json"
         if os.path.exists(self.feedback_file):
             try:
                 with open(self.feedback_file, 'r') as f:
@@ -89,14 +124,12 @@ class ReqEvalApp:
                 print("Error reading feedback data file")
             except Exception as e:
                 print(f"Unexpected error loading feedback data: {str(e)}")
-        self.feedback_data = {}  # Stores feedback for each prediction
         
-        # Load existing feedback if available
-        self.feedback_file = "feedback_data.json"
+        # Load feedback
         self.load_feedback()
         
         # Create notebook with tabs
-        self.notebook = ttk.Notebook(master)
+        self.notebook = ttk.Notebook(self.master)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Create tabs
@@ -145,14 +178,49 @@ class ReqEvalApp:
             messagebox.showerror("Error", f"Training data file not found: {data_file}")
             return
 
+        # Create progress window
+        progress_window = tk.Toplevel(self.master)
+        progress_window.title("Augmenting Data")
+        progress_window.geometry("400x200")
+        
+        # Create progress label and bar
+        progress_label = tk.Label(progress_window, text="Initializing augmentation...")
+        progress_label.pack(pady=10)
+        
+        progress_bar = ttk.Progressbar(progress_window, orient=tk.HORIZONTAL, length=300, mode='determinate')
+        progress_bar.pack(pady=10)
+        
+        device_label = tk.Label(progress_window, text="")
+        device_label.pack(pady=5)
+        
+        # Update device info
+        device = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
+        device_label.config(text=f"Using: {device}")
+        
+        progress_window.update()
+
         try:
+            # Count total lines for progress tracking
+            total_lines = sum(1 for _ in open(data_file, encoding='utf-8'))
+            progress_bar["maximum"] = total_lines
+            
             augmented_lines = []
             with open(data_file, encoding='utf-8') as f:
-                for line in f:
+                for i, line in enumerate(f):
+                    # Update progress
+                    progress_bar["value"] = i + 1
+                    progress_label.config(text=f"Augmenting item {i+1} of {total_lines}")
+                    progress_window.update()
+                    
+                    # Process the line
                     item = json.loads(line)
                     orig_text = item.get("text", "")
                     aug_text = contextual_augment(orig_text, model_name="bert-base-uncased")
                     augmented_lines.append(json.dumps({"text": aug_text, "supplier_status": item.get("supplier_status", "")}))
+            
+            # Update progress for writing phase
+            progress_label.config(text="Writing augmented data to file...")
+            progress_window.update()
             
             aug_file = os.path.splitext(data_file)[0] + "_augmented.jsonl"
             with open(aug_file, "w", encoding="utf-8") as f:
@@ -162,11 +230,33 @@ class ReqEvalApp:
                 for line in augmented_lines:
                     f.write(line + "\n")
             
-            messagebox.showinfo("Augmentation Complete", f"Augmented data saved to {aug_file}")
+            # Update completion status
+            progress_label.config(text="Augmentation complete!")
+            progress_bar["value"] = progress_bar["maximum"]
+            
+            # Add stats to progress window
+            stats_text = f"Original samples: {total_lines}\n"
+            stats_text += f"New augmented samples: {len(augmented_lines)}\n"
+            stats_text += f"Total dataset size: {total_lines + len(augmented_lines)}\n"
+            stats_text += f"Device used: {device}"
+            
+            stats_label = tk.Label(progress_window, text=stats_text, justify="left")
+            stats_label.pack(pady=10)
+            
+            # Add close button to progress window
+            ttk.Button(progress_window, text="Close", 
+                      command=progress_window.destroy).pack(pady=5)
+            
+            # Update main application
             self.data_path.set(aug_file)
             self.log_text.insert(tk.END, f"Augmented data created: {aug_file}\n")
+            self.log_text.insert(tk.END, f"Used {device} for augmentation\n")
+            self.log_text.insert(tk.END, f"Total dataset size: {total_lines + len(augmented_lines)} samples\n")
             self.log_text.see(tk.END)
+            
         except Exception as e:
+            # Close progress window on error
+            progress_window.destroy()
             messagebox.showerror("Augmentation Error", f"Failed to augment data: {str(e)}")
     def show_layer_info(self, info_text):
         """Display information about the selected layer training strategy"""
@@ -215,6 +305,50 @@ class ReqEvalApp:
         self.num_epochs = tk.IntVar(value=3)
         ttk.Spinbox(epoch_frame, from_=1, to=20, textvariable=self.num_epochs, width=5).pack(side="left", padx=5)
         ttk.Label(epoch_frame, text="(more epochs = better learning but risk of overfitting)").pack(side="left", padx=5)
+        
+        # GPU option with better feedback
+        gpu_frame = ttk.LabelFrame(training_params, text="GPU Acceleration")
+        gpu_frame.pack(fill="x", pady=5, padx=5)
+        
+        # GPU use checkbox
+        self.use_gpu = tk.BooleanVar(value=True)
+        gpu_check_frame = ttk.Frame(gpu_frame)
+        gpu_check_frame.pack(fill="x", pady=5, padx=5)
+        ttk.Checkbutton(gpu_check_frame, text="Use GPU acceleration", 
+                      variable=self.use_gpu).pack(side="left")
+        
+        # Test GPU button
+        ttk.Button(gpu_check_frame, text="Test GPU", 
+                 command=lambda: self.run_external_script("src/check_gpu.py")).pack(side="right")
+        
+        # GPU status frame
+        gpu_status_frame = ttk.Frame(gpu_frame)
+        gpu_status_frame.pack(fill="x", pady=5, padx=5)
+        
+        # GPU detection status
+        gpu_info = ""
+        if torch.cuda.is_available():
+            try:
+                gpu_name = torch.cuda.get_device_name(0)
+                mem = torch.cuda.get_device_properties(0).total_memory / (1024**3)  # GB
+                gpu_info = f"✅ Detected: {gpu_name} ({mem:.1f}GB)"
+                self.gpu_status = "available"
+            except Exception as e:
+                gpu_info = f"⚠️ GPU detected but error: {str(e)}"
+                self.gpu_status = "error"
+        else:
+            gpu_info = "❌ No CUDA GPU detected. Using CPU only."
+            self.gpu_status = "unavailable"
+        
+        # Display GPU status with appropriate styling
+        status_label = ttk.Label(gpu_status_frame, text=gpu_info, font=("", 9))
+        status_label.pack(side="left", padx=5)
+        
+        # Add help text if needed
+        if self.gpu_status != "available":
+            help_text = "See GPU_SETUP.md file for troubleshooting"
+            ttk.Label(gpu_status_frame, text=help_text, font=("", 8, "italic"), 
+                    foreground="blue").pack(side="right", padx=5)
         
         # Layer architecture info
         layer_frame = ttk.Frame(param_frame)
@@ -431,7 +565,13 @@ class ReqEvalApp:
         info.append("  • Improved context processing")
         info.append("  • Enhanced handling of formal language")
         info.append("  • Superior performance on domain-specific tasks")
-        info.append(f"Model Status: {'Loaded' if self.model else 'Not Loaded'}")
+        
+        # Safe access to model attribute
+        model_status = "Not Loaded"
+        if hasattr(self, 'model') and self.model is not None:
+            model_status = "Loaded"
+            
+        info.append(f"Model Status: {model_status}")
         info.append(f"Model Location: bert_req_eval_model")
         info.append("")
         
@@ -468,7 +608,13 @@ class ReqEvalApp:
         
         # Data Processing
         info.append("=== Data Processing ===")
-        info.append(f"Tokenizer: {type(self.tokenizer).__name__ if self.tokenizer else 'N/A'}")
+        
+        # Safe access to tokenizer attribute
+        tokenizer_name = "N/A"
+        if hasattr(self, 'tokenizer') and self.tokenizer is not None:
+            tokenizer_name = type(self.tokenizer).__name__
+            
+        info.append(f"Tokenizer: {tokenizer_name}")
         info.append("Max Sequence Length: 128 tokens")
         info.append("Text Augmentation: ContextualWordEmbsAug (Technical domain)")
         info.append(f"Training Data: {self.data_path.get() if hasattr(self, 'data_path') else 'N/A'}")
@@ -483,10 +629,20 @@ class ReqEvalApp:
         
         # Reinforcement Learning
         info.append("=== Reinforcement Learning Status ===")
-        hard_examples_count = len(getattr(self, 'hard_examples', []))
-        corrections_count = len(getattr(self, 'corrections', []))
+        
+        # Safe access to collections
+        hard_examples_count = 0
+        if hasattr(self, 'hard_examples'):
+            hard_examples_count = len(self.hard_examples)
+            
+        corrections_count = 0
+        if hasattr(self, 'corrections'):
+            corrections_count = len(self.corrections)
+            
         info.append(f"Collected Hard Examples: {hard_examples_count}")
         info.append(f"User Corrections: {corrections_count}")
+        
+        total_feedback = 0
         if hasattr(self, 'feedback_data'):
             total_feedback = len(self.feedback_data)
             info.append(f"Total Feedback Entries: {total_feedback}")
@@ -666,13 +822,15 @@ class ReqEvalApp:
                 gc.collect()  # Force garbage collection
                 
                 # Call the training function with callbacks and user parameters
+                use_gpu = self.use_gpu.get() if hasattr(self, 'use_gpu') else True
                 self.model, self.tokenizer, history = train_req_model_v2.train_model(
                     data_path=data_file,
                     model_dir="bert_req_eval_model",
                     use_roberta=True,
                     batch_size=batch_size,
                     epochs=epochs,
-                    callbacks=callbacks
+                    callbacks=callbacks,
+                    use_gpu=use_gpu
                 )
                 
                 # Ensure progress bar shows 100% completion
@@ -913,6 +1071,53 @@ class ReqEvalApp:
                              f"This may take a while. Continue?"):
             # Start reinforcement learning
             self.train_model(reinforce_learning=True)
+    
+    def run_external_script(self, script_path):
+        """Run an external Python script and display results in a popup window"""
+        try:
+            import subprocess
+            import sys
+            import os
+            
+            # Use virtual environment Python if available, otherwise use current interpreter
+            venv_path = os.path.join(os.getcwd(), ".venv", "Scripts", "python.exe")
+            if os.path.exists(venv_path):
+                python_exe = venv_path
+            else:
+                python_exe = sys.executable
+            
+            # Run the script and capture output
+            result = subprocess.run([python_exe, script_path], 
+                                  capture_output=True, text=True, check=False)
+            
+            # Create popup window to display results
+            result_window = tk.Toplevel(self.master)
+            result_window.title("GPU Test Results")
+            result_window.geometry("700x500")
+            
+            # Add scrolled text widget
+            text_widget = scrolledtext.ScrolledText(result_window, wrap=tk.WORD)
+            text_widget.pack(expand=True, fill="both", padx=10, pady=10)
+            
+            # Insert information about which Python interpreter was used
+            text_widget.insert(tk.END, f"Using Python interpreter: {python_exe}\n\n")
+            
+            # Insert the result
+            if result.stdout:
+                text_widget.insert(tk.END, result.stdout)
+            
+            # If there's an error, show that too
+            if result.stderr:
+                text_widget.insert(tk.END, "\n\nERRORS:\n", "error")
+                text_widget.insert(tk.END, result.stderr)
+                text_widget.tag_configure("error", foreground="red")
+            
+            # Add close button
+            ttk.Button(result_window, text="Close", 
+                     command=result_window.destroy).pack(pady=10)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to run script: {str(e)}")
     
     def reset_gui(self):
         # Clear status label
